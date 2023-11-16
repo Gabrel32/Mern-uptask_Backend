@@ -1,0 +1,29 @@
+import jwt from "jsonwebtoken"
+import Usuario from "../model/Usuarios.js"
+
+const checkAuth = async (req, res, next)=> {
+    let token
+
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith("Bearer")
+    ) {
+        try {
+            token = req.headers.authorization.split(" ")[1]
+
+            const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+            req.usuario = await Usuario.findById(decoded.id).select("-password -confirmado -token -createdAt -updatedAt -__v")
+
+        } catch (error) {
+            return res.status(404).json({msg:"el token es incorrecto o esta expirado"})
+        }
+    }
+    if (!token) {
+        const error = new Error("Hubo un error")
+        return res.status(401).json({msg:error.message})
+    }
+    next()
+}
+
+export default checkAuth
